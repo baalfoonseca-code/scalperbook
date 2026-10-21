@@ -1,0 +1,352 @@
+DOSSIÊ DE COMANDO PARA O CODEX
+RÊMORA SCALPER BOOK: REFINAMENTO CONTROLADO DA LEITURA DE MERCADO
+Revisão 1 | 21/10/2026 | Referência: BOOK 1.125, RC3 SCOPE FIX
+
+Este arquivo inteiro pode ser copiado e colado no Codex. Também pode ser anexado como instrução de implementação. É uma especificação de trabalho; não é código implementado, teste do EA ou homologação.
+
+DECISÃO E OBJETIVO
+
+Usar a BOOK vigente como base faz sentido porque ela conserva a arquitetura analisada e acrescenta uma confirmação operacional do livro. Isso não demonstra superioridade de acerto ou rentabilidade frente à Scalper padrão. O filtro pode vetar, atrasar ou excluir operações favoráveis e desfavoráveis.
+
+O objetivo é tornar mensurável a resposta do preço ao esforço e ao fluxo, mantendo as quatro possibilidades originais: absorção para vender em região superior, continuação para comprar nessa região, absorção para comprar em região inferior e continuação para vender nessa região. As regiões são as definidas pela matriz vigente, não topos ou fundos finais conhecidos depois.
+
+Uma onda que testa uma região com muito esforço e pouco progresso é diferente da onda que reage. A reação precisa mostrar progresso na direção pretendida. Exigir pouco progresso da própria reação destruiria a lógica que se deseja avaliar. Volume alto isolado não prova absorção; Weis e POC concordando não garantem continuação e não são duas confirmações estatisticamente independentes.
+
+A atualização operacional de filtros ainda precisa de critérios calibrados e testados. O relatório de uma sessão negativa não fornece esses critérios. Por isso, este comando autoriza implementar agora a FASE A, observacional, e especificar a FASE B, sem ativá-la nem escrever filtros de negociação ficticiamente calibrados. Isso corresponde à sequência de medição antes da mudança de entrada recomendada no dossiê atualizado.
+
+Nenhum refinamento de entrada é apresentado como concluído ao término da Fase A. A Fase A entrega o instrumento necessário para fundamentá-lo. Não afirmar que essa primeira entrega já protege melhor, recupera ABS perdidas ou elimina stops.
+
+INÍCIO DO COMANDO EXECUTÁVEL
+
+1. MISSÃO E AUTORIZAÇÃO
+
+Atue como desenvolvedor sênior MQL5 e auditor quantitativo independente. Continue no repositório atual e use a última candidata nativa BOOK vigente. Execute integralmente a FASE A descrita abaixo quando esse fonte estiver disponível. Entregue uma candidata experimental separada e os artefatos de validação. Não faça merge nem instalação/ativação no terminal.
+
+Não recomece a estratégia; não edite a Scalper antiga; não reescreva a BOOK a partir de PDFs. Não refatore por preferência de estilo, não simplifique regras e não misture correções de infraestrutura com pesquisa de sinal.
+
+Se existir a skill $evoluir-remora-book no ambiente, leia-a e use-a como apoio. Não presuma que skills de outra conversa estejam instaladas. Os procedimentos das seções 2 a 9 deste comando são autossuficientes e devem ser seguidos mesmo sem aquela skill. São orientações embutidas, não nomes de plugins supostamente disponíveis.
+
+2. SKILL EMBUTIDA: CONTINUIDADE, FONTES E PROVENIÊNCIA
+
+2.1. Localize o .mq5 vigente no checkout e as instruções aplicáveis do repositório. Identifique arquivo, versão, cabeçalho, revisão git, hash e dependências. A referência histórica esperada é BOOK 1.125, RC3 SCOPE FIX, derivada de 62b2b0c, com experimental/docs/scope-fix-report.md. Esse commit identifica a origem, não necessariamente a revisão final com todas as correções posteriores. Preserve a candidata imediatamente anterior como controle.
+
+2.2. Antes de editar, registre a base encontrada e seu diff contra eventuais modificações locais. Não sobrescreva trabalho alheio. Use um checkout ou arquivo experimental separado se necessário. Preserve o controle para comparação posterior.
+
+2.3. Se o nativo não estiver disponível, declare isso antes de qualquer edição de EA; procure no repositório e no histórico acessível. Continue as verificações documentais e entregue o inventário de evidências, mas não reconstrua silenciosamente um .mq5 nem declare implementação/compilação concluída. Não solicite novamente os documentos já disponíveis.
+
+2.4. Fontes documentais, com hashes de referência:
+- Dossiê Absorção × Continuação com Weis Wave e Volume Profile (2).pdf: 21 páginas; SHA-256 a3339633b735f6b4ebe07bdda50c7fd193ea3260b95651bbbf7668a37e5c1aaa. Ler especialmente seções 15 e 16, páginas 9 a 21.
+- scalperbook01.pdf: 200 páginas; SHA-256 eefed656d4dd9561f4ace91796698969826f4790ded81818486e331d9464222f. Referência documental da BOOK, não substituto do nativo.
+- Relatório disponibilizado como 01-Documento-sem-nome-12-.docx: SHA-256 95e0f37337b4e01d1b961be6283826d9aa798996bc79b57693d3608b937f95f0. Não confundir ausência de trecho com ausência de operação.
+- Preset WIN real: as 70 declarações e valores da seção 10, transcritos do usuário. Eles descrevem aquela instância WIN, não comprovam o preset de uma instância WDO.
+
+Se uma cópia tiver outro hash, confira o conteúdo e relate a diferença; não assuma que o nome do arquivo comprova identidade. Hash de PDF não é hash de .mq5. Prints de compilação referem-se ao arquivo compilado na ocasião e não certificam automaticamente outra revisão.
+
+2.5. Hierarquia: instrução atual do usuário e este escopo; fonte nativo vigente para comportamento; preset real para a comparação operacional; relatórios para eventos observados; dossiês para intenção e hipóteses. Não adote uma proposta do dossiê como regra já existente.
+
+3. SKILL EMBUTIDA: LEITURA CRÍTICA DO DOSSIÊ E DO CÓDIGO
+
+Confirme no nativo antes de mudar qualquer coisa:
+
+3.1. ComputePOCWithTie já soma buyVol, sellVol e unkVol usando os flags exclusivos de compra/venda. A decisão da matriz analisada não usa esses totais como requisito. Isso é uma oportunidade de investigação, não demonstra que ignorá-los seja um defeito de programação.
+
+3.2. ComputeMatrixSnapshot já expõe wwWaveBars, wwWaveAgeSec, wwAccumVolume e wwDistancePts. O dossiê exagera ao dizer que extensão e duração estão simplesmente ausentes. A lacuna relevante é o uso alinhado dessas medidas e do fluxo na mesma janela. wwDistancePts é deslocamento líquido absoluto a partir da referência da onda, não o caminho total percorrido pelo preço.
+
+3.3. RebuildWeisCache segmenta pela direção entre fechamentos M1, conserva direção em igualdade e calcula a referência com até dez ondas anteriores de ambas as direções. Preserve exatamente esse algoritmo. A última onda acumulada com barras fechadas pode continuar em formação; "dados de barras fechadas" não significa necessariamente "onda já encerrada por reversão".
+
+3.4. C1 ABS combina esforço com divergência do POC OU estagnação estrita com corpo limitado OU acompanhamento da reação. O limite do corpo não é condição universal de todas as ABS. c1_movedir_ok e c1_wavedir_ok são telemetria, não erros automaticamente corrigíveis. Torná-los um AND universal pode excluir precisamente a reação que a rota aceita.
+
+3.5. C1 CONT já exige esforço, deslocamento, POC acompanhando e coerência das direções do preço, onda e vela conforme o input. Stage 2 já exige rompimento e onda viva na direção da tese. Portanto, não afirmar que toda confirmação está ausente. Tempo/volume de aceitação ou reteste obrigatório seriam critérios novos.
+
+3.6. POC curto não é Volume Profile completo. VAH/VAL, HVN/LVN, swings e sessão/D-1 perfilados não podem ser considerados disponíveis por existirem VWAP, H1/L1 e POC de 60 segundos.
+
+3.7. O dossiê usa defaults ao mencionar book desligado e WIN SL/TP de 150/300. O preset real informado tem os dois controles DOM ligados, dominância 55%, WIN SL 250 e TP 750. BandMultiplier real é 0,8. Não alterar esses valores para fazê-los coincidir com o texto do dossiê.
+
+3.8. O início da região em posRel 0,60 equivale a VWAP + 0,20 × BandMultiplier × SigmaD1. No preset 0,8, isso corresponde a +0,16 SigmaD1, não +0,20. O limiar superior de vidro 1,50 corresponde a +2 × BandMultiplier × SigmaD1; no preset, +1,60 SigmaD1. Aplicar o espelho inferior. Esses cálculos explicam a geometria; não autorizam alterá-la.
+
+3.9. Livro exibido, volume negociado e OFI são coisas distintas. Uma foto de cinco níveis não prova iceberg, reposição ou absorção. Uma razão R/delta não reproduz o OFI de Cont, Kukanov e Stoikov. Os resultados desse estudo em ações dos EUA não calibram limiares WIN/WDO nem provam vantagem preditiva da BOOK.
+
+3.10. Journals e reconciliação influenciam o momento em que uma entrada pode ocorrer. Não ignore seu efeito temporal porque uma análise documental se concentrou na primeira metade do EA. Leia os caminhos relevantes, preservando sua implementação.
+
+4. SKILL EMBUTIDA: CONTRATO DE PRESERVAÇÃO
+
+Preservar, sem mudança de fórmulas, comparadores, precedência ou defaults:
+
+- Arquitetura M3 contexto / M1 sinal / tick execução; relógios fechados e caches. C2/C3/C4/C5 continuam calculados conforme a matriz vigente M1 com compatibilidade macro M3. Não congelar toda a matriz em M3.
+- ABS/CONT, BASE/TURBO, C1-C5, score e ROUTE_CONFLICT_BLOCK.
+- POC, regra canônica de empate, janelas, Weis, VWAP vigente e D-1, sigma e seus filtros.
+- Stage 1, Stage 2, região congelada, trigger, margem, overshoot, timeout e Hard Directional Contradiction.
+- Sem recriar, prorrogar ou reativar ARMED cancelado. C1 deixar de valer na M1 seguinte não vira automaticamente novo cancelamento: preserve a máquina atual e observe essa situação separadamente.
+- LATE_BREAKOUT_LOST e suas duas ocorrências em SendOrder; verificações pertinentes de BID/ASK/LAST e overshoot após limpeza do journal; sem alteração do significado de APS_STILL_ARMED.
+- SL, TP, BE, EOD, lote fixo/risco, margem, desvios, spread, quotas, cooldowns e limites diários.
+- Contabilidade, propriedade das posições, netting/hedging, pendências, PREPARED/MAY_HAVE_DISPATCHED, journals, arquivos financeiros, reconciliação, recuperação e tratamento de despacho incerto.
+- Gate efetivo DOM: cinco melhores preços distintos de cada lado, agregação de volumes, qualidade, dominância ajustável a partir de 55%, leitura nova no caminho final e veto sem confluência. Não usar o cache observacional como autorização. Não adicionar assinatura ou leitura MarketBookGet para a camada nova.
+- Os 70 inputs existentes: nomes, tipos, ordem e defaults do nativo. O preset real é preservado separadamente; não trocar os defaults pelos valores do gráfico.
+
+Não modificar as funções financeiras ou de envio para acomodar o diagnóstico. Não apagar nem reformatar código fora dos pontos indispensáveis. Uma comparação estática deve identificar cada corpo alterado e explicar seu efeito.
+
+Se surgir defeito nativo fora do escopo, reproduza e documente separadamente. Não declare falha a partir de uma quebra de palavra no PDF e não faça "correções preventivas" que mudem a estratégia. Em particular, conferir GetTickCount64() no fonte, não na paginação. Não reabrir a discussão sobre APS_STILL_ARMED por hipótese isolada.
+
+5. SKILL EMBUTIDA: IMPLEMENTAÇÃO DA FASE A AUTORIZADA AGORA
+
+5.1. Módulo separado e um único controle novo.
+
+Criar um módulo observacional de resposta do preço, preferencialmente em include separado, com estruturas e estado próprios. Não duplicar a matriz. Acrescentar ao final dos 70 inputs apenas:
+
+enum ENUM_RESPONSE_MODE { RESPONSE_ORIGINAL=0, RESPONSE_OBSERVAR=1 };
+input ENUM_RESPONSE_MODE Inp_ResponseMode = RESPONSE_ORIGINAL;
+
+São 71 inputs nesta candidata. Não adicionar APLICAR sem uma regra operacional definida, implementada e testada. APLICAR fica explicitamente reservado à futura Fase B; não oferecer opção que pareça proteger mas apenas registre dados.
+
+ORIGINAL: não executar o trabalho novo, não abrir seus arquivos, não fazer suas consultas e não depender de seu estado. O caminho de compatibilidade deve retornar imediatamente. Os fluxos originais, inclusive o gate do book quando habilitado, continuam valendo.
+
+OBSERVAR: coletar e registrar métricas sem autorizar, vetar ou cancelar entradas. Não significa paper trading, Algo Trading desligado nem EA impedido de enviar ordens reais. Falha do diagnóstico não altera validade da matriz nem bloqueia BE, EOD ou recuperação. Completude do diagnóstico é registrada como disponível/indisponível.
+
+5.2. Métricas do fluxo e do resultado: mesma janela, dados causais.
+
+Reutilizar s.pocNow/s.pocPrev e os registros que ComputePOCWithTie já percorre. Quando necessário, adicionar somente coleta escalar observacional no laço existente; não mudar os critérios originais de aceitação dos ticks, a escolha do POC ou o retorno da função. Não realizar outra CopyTicks/CopyTicksRange para obter novamente esses dados.
+
+Para cada janela guardar início/fim solicitado, instante e preço do primeiro e do último registro elegível, Vb, Vs, Vu, contagens observacionais e status de disponibilidade. Manter ordem cronológica e consistência com a janela. Resetar/coordenar a coleta por identidade de janela para não misturar tentativas ou barras.
+
+Definições exatas:
+V = Vb + Vs + Vu
+delta = Vb - Vs
+delta_pct_total = 100 × delta / V, somente se V > 0
+known_volume_pct = 100 × (Vb + Vs) / V, somente se V > 0
+known_record_pct = 100 × registros_com_lado_exclusivo / registros_elegíveis, somente se a contagem for positiva
+R_window = preço_último - preço_primeiro, dentro da mesma janela
+R_between = último_da_janela_now - último_da_janela_prev, mantendo a definição atual de s.priceMove
+impact_signed = R_window / delta, somente com delta diferente de zero e operandos/resultados finitos
+flow_balance_strength = abs(delta) / V, somente se V > 0
+
+Não dividir R_between pelo delta exclusivo de now e chamar isso de impacto da mesma janela. Não confundir cobertura por volume com percentual de registros. "Registros" são ticks elegíveis do feed, não identificação garantida de negócios individuais ou deals do EA.
+
+BUY exclusivo soma Vb; SELL exclusivo soma Vs; ambos ou nenhum somam Vu. Não estimar o lado por candle, Weis, uptick/downtick ou book. A disponibilidade dos flags é uma propriedade a medir; cobertura alta não prova que a classificação do feed é infalível.
+
+Delta zero não prova ausência de agressão: os dois lados podem ter grande volume. Sem lado conhecido, o delta algébrico pode ser zero, mas não pode ser publicado como fluxo neutro comprovado. Indicar cobertura nula/insuficiente separadamente. Sem registros, publicar indisponível, não zeros que pareçam medidas válidas.
+
+Não fazer clamp, epsilon artificial ou correção silenciosa para produzir uma razão finita. Perto do equilíbrio líquido, o quociente R/delta pode ser instável; mantê-lo estritamente diagnóstico, sempre acompanhado dos volumes, cobertura e força do saldo. Não inferir absorção de seu valor isolado.
+
+Para uma direção d hipotética (+1 compra, -1 venda), registrar também d × R_window e d × delta, com a direção identificada. Nunca converter essas medidas em voto de entrada nesta fase.
+
+5.3. Ondas: reutilizar a segmentação atual.
+
+Reutilizar wwUseReal, wwAccumClosed, wwCurrentWaveBars, wwWaveStartPrice e os campos do snapshot. Registrar volume acumulado, deslocamento líquido, duração disponível, direção, esforço original e estado parcial/encerrado. Distinguir onda corrente formada por barras fechadas da onda viva com barra M1 parcial.
+
+Se for necessário guardar estatísticas de ondas anteriores, coletá-las no percurso já existente de RebuildWeisCache, em buffer circular limitado. Não alterar a média original, o número de ondas usado por ela, o critério de virada nem a atualização de caches. Comparações com ondas da mesma direção são diagnósticas e ficam separadas do esforço que a estratégia usa.
+
+Volume por ponto = volume / abs(deslocamento_líquido), somente com deslocamento pelo menos igual a um tick válido, volume válido e resultado finito. Sem deslocamento mensurável, registrar esse fato e razão indisponível. Não escolher um extremo futuro ou usar a onda já terminada para descrever retrospectivamente o que se sabia ao armar.
+
+Registrar a origem real/tick do volume efetivamente escolhida e problemas de zeros/indisponibilidade. Não trocar automaticamente o fallback original; corrigir seleção de volume seria outra alteração de comportamento.
+
+5.4. Observação por candidato e por ARMED.
+
+No snapshot existente, registrar os componentes de ABS/CONT mesmo quando nenhuma rota estiver válida, desde que esse snapshot já tenha sido calculado pelo fluxo original. A fase não força nova matriz por tick para encontrar sinais ausentes.
+
+Registrar ABS_DIVERGENCE, ABS_STALL_STRICT, ABS_FOLLOWING_REACTION e ABS_FOLLOWING_EXTENSION separadamente e como flags que podem coexistir quando aplicável, além dos motivos originais de invalidade. Não transformar um diagnóstico em rótulo comprovado de absorção.
+
+Depois de preservado o bloqueio original de conflito e a seleção original, associar o diagnóstico ao candidato selecionado e ao ARMED criado. Identidade: símbolo, conta/servidor, Magic, barra do sinal, armedAt, rota, modo, direção, regionEndTime, regionHigh/Low e trigger original. Uma correlação desconhecida fica desconhecida; não tomar identificadores de outro ciclo.
+
+Registrar idade do ARMED, mudança de barra, validade atual de C1 quando já disponível, contradição original e desfecho original. Não cancelar sinal porque a avaliação nova seria desfavorável. Registrar também oportunidades que a matriz não autorizou; não chamá-las de operações que teriam ocorrido.
+
+Aceitação/rejeição exige trajetória temporal e volume com cobertura apropriada. Nesta fase registrar os fatos disponíveis em relação ao nível original e seus horários; não inventar tempo de permanência nem volume integral a partir de amostras OnTick que podem omitir eventos. Quando não existir cobertura, marcar indisponível. Não exigir reteste, fechamento adicional ou espera nova.
+
+Sem novo cálculo ou escrita entre a última leitura válida do gate DOM e a chamada de envio. Sem hooks que prolonguem o caminho de despacho ou alterem a precedência dos cancelamentos. Usar cópias/flags e descarregar eventos depois do trabalho financeiro original. Não recalcular matriz para fins diagnósticos dentro de SendOrder ou de limpeza de journal.
+
+5.5. Exportação, desempenho e recuperação.
+
+Usar arquivo diagnóstico versionado separado, sem mudar cabeçalhos, esquemas ou nomes de CSV financeiros/legados. Namespace por conta, servidor, símbolo, Magic e execução, sem colisões. Nenhuma persistência nova condiciona uma obrigação financeira antiga.
+
+Fila e buffers limitados; contadores explícitos de descartes, lacunas e erros. Sem Print, FileFlush, abertura de arquivo, varredura de histórico ou alocação não limitada por tick. Fazer gravações em lotes limitados pelo timer, após o corpo financeiro já existente. Deinit não pode ter laço de espera indefinido.
+
+Definir e documentar limites operacionais de memória, fila, tamanho diário e frequência. São limites de custo, não parâmetros estratégicos calibrados. Se o subsistema exceder o limite ou falhar, suspender apenas o diagnóstico e registrar disponibilidade; não suspender gerenciamento financeiro nem liberar entrada que o book vetaria.
+
+Normalização por horário e medianas de impacto requerem histórico suficiente e causal. Nesta entrega, implementá-las em análise offline sobre os arquivos coletados, com chave ativo/contrato, tipo de volume, janela e horário do servidor documentada. Usar apenas pregões anteriores para formar a referência de uma sessão. Sem base adequada, declarar normalização indisponível. Não criar consultas intradiárias pesadas nem mediana fictícia no EA.
+
+6. SKILL EMBUTIDA: FRONTEIRA DA FUTURA FASE B
+
+Produzir uma especificação curta de experimentos, sem implementar seus filtros agora. Ela deve indicar variáveis, janelas, direção, disponibilidade, regra de veto, custo, hipóteses e evidências faltantes. Não inventar limiares "ótimos" nem números emprestados de WIN para WDO.
+
+Um filtro futuro de qualidade só poderá vetar o candidato originalmente elegível após a resolução original de conflito/seleção. Não poderá tornar válida uma rota antes inválida, resolver conflito filtrando uma das rotas, inverter a tese ou rearmar um sinal encerrado. A ausência de prova exigida pelo filtro não poderá ser interpretada como confirmação.
+
+Mesmo um veto não garante que a lista diária de trades será subconjunto da original: contadores, posições e relógios alterados podem afetar oportunidades posteriores. Comparar os eventos comuns e também simulações completas de cada política.
+
+Recuperar ABS que nunca armavam exige mexer na geração de candidatos/C1. Isso é outro experimento, não benefício automático de um filtro adicional. Não prometer essa recuperação preservando integralmente o mesmo C1.
+
+Ficam fora da presente cirurgia: novo limiar ZigZag/ATR para Weis; referência obrigatória só de ondas da mesma direção; direção universal de ABS; rejeição/reteste obrigatório; mínimos de negócios que virem filtro; desempate por ponto médio do POC; Volume Profile completo; novos swings; normalização que mude esforço vigente; OnBookEvent ou inferência de iceberg; SL/TP por estrutura/volatilidade; novas saídas por contradição. Documentar propostas sem implementá-las.
+
+A observação do próprio dossiê de que certas medidas poderiam ser úteis não demonstra um erro na fórmula atual. Alterações estratégicas devem assumir explicitamente que mudam a política de entrada.
+
+7. SKILL EMBUTIDA: PROVAS E TENTATIVA DE REFUTAÇÃO
+
+Execute os testes possíveis e registre o resultado real. Não usar PASSOU para inspeção estática, simulação não executada ou compilação indisponível. Não fabricar a quantidade de operações a partir de ARMED, DISPARO, REQUEST_ACCEPTED ou NO_DISPATCH_RESOLVED. Fill/saída/SL/PnL exigem deals, PID e custos corretos.
+
+7.1. Comparação estática:
+- Diff mínimo contra o nativo de controle; lista de arquivos e funções modificados.
+- Comparar os 70 inputs originais, na mesma ordem, com nomes/tipos/defaults intactos; exatamente um input novo, total 71. Comparar o preset operacional de controle sem alterar seus valores.
+- Confirmar que as fórmulas e caminhos protegidos da seção 4 permanecem. Se houver inserção observacional em POC/Weis, demonstrar que ela não modifica nenhum operando, retorno, condição ou cache estratégico original.
+- Registrar corpo normalizado/hash das funções protegidas. As inserções justificadas não podem ser simplesmente ignoradas por uma comparação que esconda alterações reais.
+
+7.2. Testes numéricos do módulo novo, separados dos testes do EA:
+- Vb=600, Vs=100, Vu=300: V=1000, delta=500, delta_pct_total=50%, known_volume_pct=70%. Com R_window=0, impact_signed=0; não há confirmação automática de ABS.
+- Vb=100, Vs=600, Vu=300 e R_window=+5: delta=-500 e impact_signed=-0,01; registrar preço contra o saldo vendedor sem criar uma compra.
+- Vb=900, Vs=100, Vu=0 e R_window=20: delta=800, cobertura=100% e impact_signed=0,025; não há confirmação automática de CONT nem autorização sem matriz/book.
+- Vb=500 e Vs=500: delta=0, impacto indisponível; não concluir ausência de esforço.
+- Vb=Vs=0 e Vu>0: cobertura nula, lado desconhecido; não publicar neutralidade comprovada.
+- Janela vazia, ticks malformados, flags ambos/nenhum, ordem temporal inválida, valores não finitos, overflow, deslocamento zero e volume real zero: comportamento explícito de indisponibilidade, sem afetar a decisão original.
+- Distinguir R_window de R_between e cobertura por volume de cobertura por registros.
+- Nenhum dado posterior ao instante do sinal pode aparecer na linha daquele sinal.
+
+7.3. Equivalência funcional em dados/serviços idênticos:
+Comparar controle, candidata ORIGINAL e candidata OBSERVAR. Usar mesmo preset, ticks, relógio, DOM, serviços financeiros e respostas de I/O. Os julgamentos originais de matriz, rota, direção, trigger, cancelamento e solicitação de ordem devem coincidir. A linha diagnóstica pode divergir; a decisão original não.
+
+Cobrir as quatro combinações de região/rota/direção, cada modo BASE/TURBO que o original permitir, conflito, nenhuma rota válida, três contextos válidos ABS e extensão inválida. Não forçar casos que a própria matriz proíba.
+
+Preservar a semântica de ARMED ainda válido na barra seguinte mesmo quando C1 atual não vale e não há contradição dura. Testar timeout, HDC, fim de sessão, overshoot, mudança de identidade e bloqueio de vidro conforme a rota.
+
+Executar regressão específica:
+T1. LATE_BREAKOUT_LOST antes da preparação: terminal conforme o controle.
+T2. LATE_BREAKOUT_LOST na amostra de despacho: terminal conforme o controle.
+T3. Após limpeza durável do journal, quando a revalidação é APS_ENTRY_READY: preço executável perde trigger; cancelamento original preservado.
+T4. LAST além do trigger enquanto ASK de compra ou BID de venda perde o rompimento; cobrir ambas as direções.
+T5. Atualização apenas de BID/ASK com APS_STILL_ARMED: reproduzir sequência completa e equivalência com o controle; não impor cancelamento universal para "corrigir" esse estado.
+T6. Overshoot de LAST e/ou executável, inclusive após limpeza: mesmo desfecho/precedência do controle.
+T7. Book neutro/oposto/indisponível seguido de recuperação com ARMED ainda válido: somente a confirmação efetiva e as regras vigentes permitem avançar; nenhuma autorização nova pelo diagnóstico.
+T8. Book recupera depois do timeout/cancelamento: não reativa sinal.
+T9. Journal não resolvido, despacho incerto, falha de gravação/deleção ou ausência de prova exclusiva de não despacho: nenhum reenvio adicional; preservar reconciliação.
+T10. BE/EOD/posição aberta e diagnóstico com fila cheia, disco indisponível, reinício ou dados inválidos: o módulo novo não interfere na gestão e não apaga evidências financeiras.
+
+Os serviços simulados devem exercitar o código nativo real quando possível. Uma tradução reduzida em Python/C++ pode testar fórmulas, mas não comprova execução do MQL5 nem equivalência integral. Descrever adaptadores e cobertura. Não adicionar dependências de teste à execução real.
+
+7.4. Compilação MetaEditor:
+Localizar compilador disponível e executar a compilação nativa da candidata. Registrar versão/build, comando/caminho, hash do .mq5, includes, log completo, erros e warnings. Corrigir somente erros introduzidos pela entrega. Defeitos preexistentes são relatados; não ampliar silenciosamente a cirurgia.
+
+Se MetaEditor não existir, registrar NÃO EXECUTADO. Não substituir por parser, lint ou harness e chamar de compilado. Um print antigo com "0 errors, 1 warning" não é uma compilação desta candidata.
+
+7.5. Desempenho:
+Medir tempo adicional por callback, p50/p95/p99 quando houver amostra suficiente, máximo, memória, tamanho diário, descartes e lacunas. Comparar ORIGINAL/OBSERVAR com coleta existente do book nas mesmas condições. Sem terminal não inventar medição de CPU/latência de produção. Os budgets locais de DOM existentes não são garantia de idade da informação da bolsa nem de preempção de chamadas síncronas.
+
+7.6. Pesquisa de valor incremental:
+Gerar relatório offline por rota × modo × direção × ativo/contrato × horário/regime documentado. Distinguir observações, candidatos, ARMED, solicitações, fills e fechamentos. Comparar delta/resposta isolados contra o acréscimo de informações de ondas/POC, incluindo sinais favoráveis que o futuro filtro excluiria.
+
+Usar sessões positivas e negativas, custos, slippage, expectativa em R, MAE/MFE, drawdown, frequência, atraso e exclusões. Separar desenvolvimento/calibração/teste por tempo e registrar tentativas de configuração. Não usar o dia com todos os stops para ajustar e para validar a mesma regra.
+
+Sem histórico DOM real, o tester padrão não reproduz a política BOOK completa. Não desligar o gate e declarar que testou a mesma estratégia. Diferenciar teste da lógica com book fornecido/simulado, replay de captura real e validação prospectiva. Não criar caminho alternativo de autorização no EA de produção para facilitar o backtest.
+
+8. ENTREGAS OBRIGATÓRIAS
+
+Entregar os arquivos efetivos, não só um plano:
+1) Candidata .mq5 experimental separada e includes necessários; nativo vigente preservado.
+2) Diff contra a candidata imediatamente anterior, mapa das inserções e justificativa de cada arquivo alterado.
+3) Manifesto de fonte/revisão/hashes, 70 inputs preservados + um novo e preset de controle.
+4) Esquema do CSV novo, dicionário de métricas e exemplos produzidos pelos testes executados.
+5) Testes reproduzíveis, fixtures, comandos, resultados e logs; compilação real quando disponível.
+6) Análise offline da telemetria disponível e especificação da futura Fase B com as evidências faltantes. Sem dados suficientes, entregar o analisador e declarar a análise não executável/limitada; não inventar dados.
+7) Resumo em português: o que mudou, o que não mudou, efeito de ORIGINAL/OBSERVAR, custo medido e limitações.
+
+Usar os diretórios experimentais já existentes quando adequados. Não tocar arquivos financeiros reais nem ativar o EA. Se não houver fonte nativo, adaptar a entrega ao que foi realmente possível e declarar a implementação bloqueada por essa ausência.
+
+9. DEFINIÇÃO DE CONCLUÍDO
+
+A FASE A está implementada somente quando existe candidata nativa com instrumentação funcional, controle compatível e validações executadas/documentadas. Se faltou compilação ou replay, declarar essa etapa pendente; não chamar a candidata de homologada.
+
+Não chamar a FASE B de implementada. Nenhum novo filtro foi calibrado por este comando. Uma melhoria de seletividade só pode ser avaliada quando sua regra, seus dados e seus efeitos estiverem demonstrados. Compilação sem erros não comprova rentabilidade nem superioridade.
+
+Se houver divergência entre este comando e uma recomendação mais ampla da seção 16.6 do dossiê, respeitar o limite desta entrega: medir primeiro; não alterar segmentação, regiões, gatilho, risco ou cancelamento para acomodar a nova interpretação.
+
+Execute autonomamente o trabalho já autorizado, resolva escolhas rotineiras de implementação e conclua a entrega concreta. Não peça confirmação de novo para tarefas dentro desse escopo. Reporte bloqueios reais com a evidência correspondente, sem fingir conclusão.
+
+10. PRESET OPERACIONAL WIN DE CONTROLE — 70 INPUTS
+
+Fotografia informada pelo usuário: WINZ26 em gráfico M5, mas os timeframes internos são M3 e M1. Os inteiros 3 e 1 abaixo representam PERIOD_M3 e PERIOD_M1; sizing 0 significa lote fixo. Preservar os nomes e valores; defaults do fonte continuam separados.
+
+{
+  "Inp_Magic_WIN": 60001,
+  "Inp_Magic_WDO": 60002,
+  "CSVFileName": "Scalper01_RC1",
+  "BacktestStart": "2025.01.01 00:00:00",
+  "Inp_ContextTF": 3,
+  "Inp_SignalTF": 1,
+  "Inp_StartHHMM": 900,
+  "Inp_StopEntryHHMM": 1530,
+  "Inp_EOD_CloseHHMM": 1750,
+  "Inp_SizingMode": 0,
+  "Inp_FixedLots": 1.0,
+  "Inp_RiskPerTradePct": 0.15,
+  "Inp_MaxLots": 1.0,
+  "Inp_SL_Pts_WIN": 250.0,
+  "Inp_TP_Pts_WIN": 750.0,
+  "Inp_SL_Pts_WDO": 5.0,
+  "Inp_TP_Pts_WDO": 12.5,
+  "Inp_SpreadMaxPts_WIN": 5.0,
+  "Inp_SpreadMaxPts_WDO": 0.5,
+  "Inp_EnableBreakEven": true,
+  "Inp_EnableDailyRiskStop": true,
+  "Inp_MaxDailyLossR": 3.0,
+  "Inp_EnableConsecutiveLossStop": true,
+  "Inp_MaxConsecutiveLosses": 3,
+  "Inp_MaxTradesDay": 10,
+  "Inp_CooldownSec": 0,
+  "Inp_LossCooldownSec": 0,
+  "Inp_ArmedTimeoutSec": 90,
+  "Inp_Region_Candles": 2,
+  "Inp_BreakoutMargin_WIN": 5.0,
+  "Inp_BreakoutMargin_WDO": 0.5,
+  "Inp_MaxOvershoot_WIN": 25.0,
+  "Inp_MaxOvershoot_WDO": 1.0,
+  "Inp_ABS_Effort": 1.5,
+  "Inp_CONT_Effort": 1.25,
+  "Inp_ABS_BreakoutEffort": 1.5,
+  "Inp_CONT_BreakoutEffort": 1.5,
+  "Inp_POC_WindowSec": 60,
+  "Inp_POC_FollowRatio": 0.5,
+  "Inp_RejectPOCTies": false,
+  "Inp_ABS_MinPriceMovePts_WIN": 60.0,
+  "Inp_ABS_MaxBodyPts_WIN": 60.0,
+  "Inp_ABS_MinPriceMovePts_WDO": 2.0,
+  "Inp_ABS_MaxBodyPts_WDO": 2.0,
+  "Inp_CONT_MinPriceMovePts_WIN": 50.0,
+  "Inp_CONT_MinPriceMovePts_WDO": 1.5,
+  "Inp_Cont_RequireCandleDirection": true,
+  "BandMultiplier": 0.8,
+  "Inp_VWAP_Inner_Pct": 0.6,
+  "Inp_VWAP_Outer_Pct": 1.5,
+  "Inp_Rule_40_60": 0.4,
+  "Inp_C2_WIN": 700.0,
+  "Inp_C3_Min_WIN": 125.0,
+  "Inp_C3_Max_WIN": 400.0,
+  "Inp_C2_WDO": 25.0,
+  "Inp_C3_Min_WDO": 5.0,
+  "Inp_C3_Max_WDO": 15.0,
+  "SigmaLookbackDays": 5,
+  "Inp_SigmaFloor_WIN": 200.0,
+  "Inp_SigmaFloor_WDO": 7.0,
+  "Inp_MaxDeviationPts_WIN": 10,
+  "Inp_MaxDeviationPts_WDO": 2,
+  "Inp_EnableMacroDirectionGate": true,
+  "Inp_EnableLateDirectionBlock": false,
+  "Inp_EnableAbsorption": true,
+  "Inp_EnableContinuation": true,
+  "Inp_DOM_Enable": true,
+  "Inp_DOM_InstanceTag": "shadow",
+  "Inp_DOM_TradeGateEnable": true,
+  "Inp_DOM_MinDominancePct": 55.0
+}
+
+Não aplicar como parte desta cirurgia propostas anteriores de Armed 90→60, CONT 1,25→1,50, dominância 55→60 ou WW 1,5→2,0. São hipóteses de preset, não mudanças comprovadamente melhores, e misturá-las impediria atribuir os efeitos ao código.
+
+FIM DO COMANDO EXECUTÁVEL
+
+FONTES E LIMITES DA PREPARAÇÃO DESTE COMANDO
+
+O dossiê atualizado de 21 páginas foi lido integralmente. As afirmações operacionais foram confrontadas com trechos do PDF BOOK: ComputePOCWithTie (p. 54), RebuildWeisCache/ComputeLiveWaveO1 (p. 55-57), ComputeMatrixSnapshot (p. 61-66), CsvMatrixRow (p. 76 em diante), SendOrder (p. 85 em diante), EvaluateMatrix/CheckArmedMarketReady (p. 91 em diante) e DOMGateRejectPrepared (p. 45 em diante). Referências de página são documentais e não substituem funções/linhas no nativo.
+
+Documentação primária consultada:
+- MQL5, MqlTick: https://www.mql5.com/en/docs/constants/structures/mqltick
+  Explica flags e preenchimento de preços mesmo quando apenas um campo mudou. Isso exige examinar o fluxo completo de execução, não deduzir um cancelamento novo de um tick de cotação isolado.
+- MQL5, diretivas do tester: https://www.mql5.com/en/book/automation/tester/tester_directives
+  Esclarece a necessidade de dados DOM previamente coletados para reproduzir esse tipo de informação.
+- Cont, Kukanov e Stoikov, The Price Impact of Order Book Events: https://arxiv.org/abs/1011.6402
+  Estudo de impacto contemporâneo/intervalos curtos em 50 ações dos EUA; OFI inclui eventos do livro. Não valida o indicador Weis, um limiar de 55/60%, previsão de reversão ou a rentabilidade de uma Scalper B3.
+
+Limites: este arquivo prepara uma tarefa de implementação. Não foi compilado um novo EA nesta preparação; não houve replay, backtest nem teste financeiro da proposta. As verificações do documento e dos cálculos não equivalem a testes executados da futura candidata.
